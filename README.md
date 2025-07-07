@@ -9,6 +9,7 @@ It can be used to optimize performance, share resources, and synchronize state.
 - **Native path**: If the [SharedWorker API](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker) is available, the Shared Executor is a thin wrapper around it.
 - **Fallback path**: If the [SharedWorker API](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker) is not available or the worker is started with the `forceCompat: true` option , it spawns individual web workers that cooperatively elect a master. All calls are forwarded to this master, emulating a shared worker.
 
+![demo](./sharedexecutor-demo.gif)
 
 ## Usage
 
