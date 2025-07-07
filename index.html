@@ -1,0 +1,85 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="UTF-8">
+        <title>SharedExecutor Demo</title>
+
+        <script type="module" src="index.js"></script>
+        <style>
+            #drawingCanvas {
+                border: 1px solid black;
+                background-color: #f0f0f0;
+                -webkit-user-drag: none;
+                -moz-user-drag: none;
+                user-select: none;
+                
+
+            }
+            body{
+                padding:10px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                justify-content: center;
+
+            }
+            #container {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap:2rem;
+                flex-wrap: wrap;
+            }
+        </style>
+        <script>
+            window.addEventListener('load', () => {
+                const hash = window.location.hash;
+
+                if (hash !== '#iframecontent') {
+                    const mainEl = document.querySelector('#container');
+                    const iframe = document.createElement('iframe');
+                    iframe.src = './index.html#iframecontent';
+                    iframe.width = '532';
+                    iframe.height = '550';
+                    mainEl.appendChild(iframe);
+                }  else{
+                    const els = document.querySelectorAll('.mainOnly');
+                    for (const el of els) {
+                        el.style.display = 'none';
+                    }
+                }
+
+             
+
+                
+            });
+        </script>
+    </head>
+    <body>
+        <h1 class="mainOnly">Draw something</h1>
+
+        <div id="container">
+            <div>
+                <canvas id="drawingCanvas" width="512" height="512"></canvas>
+            </div>
+        </div>
+        <div class="mainOnly">
+            <h3 id="runningMode"></h3>
+            <input type="checkbox" id="forceCompat" name="forceCompat" value="true" >
+            <label for="forceCompat"  >Force compatibility mode</label>
+        </div>
+        <p class="mainOnly">
+            This is an example of using <a href="https://github.com/riccardobl/sharedexecutor-js">SharedExecutor</a>.
+            <br>
+            Whatever you draw on one canvas it will be drawn on the other.
+            <br>
+            If you opent this in multiple tabs, you will see that the 
+            synchronization works across all of them too.
+        </p>
+
+    
+        
+    </body>
+</html>
