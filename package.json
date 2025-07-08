@@ -1,0 +1,23 @@
+{
+  "name": "sharedexecutor",
+  "version": "0.1.0",
+  "description": "An experimental library that creates a single executor shared across multiple browsing contexts (tabs, iframes) to run shared logic once and broadcast results to all contexts.",
+  "main": "sharedexecutor.js",
+  "scripts": {
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riccardobl/sharedexecutor-js.git"
+  },
+  "author": "Riccardo Balbo <os@rblb.it>",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/riccardobl/sharedexecutor-js/issues"
+  },
+  "homepage": "https://github.com/riccardobl/sharedexecutor-js#readme",
+  "devDependencies": {
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1"
+  }
+}
