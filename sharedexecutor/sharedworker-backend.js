@@ -39,13 +39,13 @@ class SharedWorkerBackend {
         });
     }
 
-    async postMessageToMainThread(message) {
+    postMessageToMainThread(message) {
         for(const port of this.ports) {
             port.postMessage(message);
         }
     };
 
-    async addMainThreadMessageListener( callback) {
+    addMainThreadMessageListener( callback) {
         this.listeners.push(callback);
     };
 

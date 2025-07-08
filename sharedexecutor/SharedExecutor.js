@@ -28,17 +28,14 @@ class SharedExecutor {
     }
 
     async registerCallback(callbackName, callbackFunction) {
-        await this.backend.ready();
         this.backend.registerCallback(callbackName, callbackFunction);
     }
 
     async unregisterCallback(callbackName) {
-        await this.backend.ready();
         this.backend.unregisterCallback(callbackName);
     }
 
     async registerMethod(methodName, methodFunction) {
-        await this.backend.ready();
         this.backend.registerMethod(methodName, methodFunction);
     } 
 

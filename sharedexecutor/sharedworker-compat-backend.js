@@ -11,17 +11,7 @@ class SharedWorkerCompatBackend {
 
         // Counter for generating IDs
         this.counter = 0;
-
-        // Initialize self
-        this.self = {
-            id: this.getId(),
-            lastSeen: Date.now(),
-            isSelf: true,
-            isMaster: false
-        };
-
         // Initialize collections
-        this.slaveTable = [this.self];
         this.registeredMethods = {};
         this.invokations = {};
 
@@ -31,22 +21,40 @@ class SharedWorkerCompatBackend {
         this.onElection = callback;
         this.isMaster = false;
 
-        
-        console.log("Fallback to shared workers emulation");
+
+        this.prefix = 'nge-sharedexecutor-compat';
+        try {
+            if (typeof self != 'undefined' && self.location && self.location.href) {
+                const path = new URL(self.location.href).pathname;
+                this.prefix = this.prefix + "-" + path.replace(/[^a-zA-Z0-9]/g, '-');
+            }
+        } catch (e) { }
+
+        // console.log("Fallback to shared workers emulation");
         // Channel for communication
-        this.channel = new BroadcastChannel('nge-sharedworker-compat');
+        this.channel = new BroadcastChannel(this.prefix);
         // Set up event handlers
         this.channel.onmessage = this.handleMessage.bind(this);
-
-        // Start heartbeat interval
-        this.heartbeatInterval = setInterval(() => this.update(), this.HEARTBEAT_INTERVAL);  
-
         this.readyPromise = new Promise((resolve) => {
             this.readyResolve = resolve;
         });
-        
 
+        this.getId().then((id) => {
+            // Initialize self
+            this.self = {
+                id,
+                lastSeen: Date.now(),
+                isSelf: true,
+                isMaster: false
+            };
+            this.slaveTable = [this.self];
+
+            // Start heartbeat interval
+            this.heartbeatInterval = setInterval(() => this.update(), this.HEARTBEAT_INTERVAL);
+        });
     }
+
+     
 
     postMessageToMainThread(message) {
         self.postMessage(message);
@@ -56,23 +64,61 @@ class SharedWorkerCompatBackend {
         self.addEventListener('message', callback);
     }
 
-    ready() {
+    async ready() {
         return this.readyPromise;
+      
     }
 
 
-    getId() {
-        let counter;
+    async getId() {
         try {
-            counter = parseInt(localStorage.getItem('nge-sharedworker-compat-counter') || '0', 10);
-            counter++;
-            localStorage.setItem('nge-sharedworker-compat-counter', counter.toString());
-        } catch (e) {
-            // Fallback if localStorage is not available
-            counter = Date.now();
-        }
-        return counter;
-    }
+            if (typeof indexedDB === 'undefined') {
+                throw new Error('IndexedDB is not available');
+            }
+            // console.log("Using IndexedDB for counter");            
+            return new Promise((resolve) => {
+                const request = indexedDB.open(this.prefix, 1);
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('counters')) {
+                        db.createObjectStore('counters', { keyPath: 'id' });
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['counters'], 'readwrite');
+                    const store = transaction.objectStore('counters');
+
+                    const countRequest = store.get('instanceCounter');
+                    countRequest.onsuccess = () => {
+                        let counter = 1;
+                        if (countRequest.result) {
+                            counter = countRequest.result.value + 1;
+                        }
+                        store.put({ id: 'instanceCounter', value: counter });
+                        // console.log("Counter value:", counter);
+                        resolve(counter);
+                    };
+
+                    countRequest.onerror = () => {
+                        // Fallback if IndexedDB fails
+                        resolve(Date.now());
+                    };
+                };
+
+                request.onerror = () => {
+                    // Fallback if IndexedDB fails
+                    resolve(Date.now());
+                };
+            });
+        } catch(e){
+            console.warn("Using fallback for ID generation:", e);
+            // Fallback if IndexedDB is not available
+            return Date.now();            
+        }        
+     }
 
 
     randomId() {
@@ -253,6 +299,7 @@ class SharedWorkerCompatBackend {
 
 
     async invoke(method, args) {
+        await this.ready();
         return new Promise((res, rej) => {
             const invkId = this.self.id + "-" + this.randomId();
 
@@ -274,7 +321,8 @@ class SharedWorkerCompatBackend {
         });
     }
 
-    triggerCallback(callbackName, ...args) {
+    async triggerCallback(callbackName, ...args) {
+        await this.ready();
         if(this.isMaster){
             // console.log(`Triggering callback ${callbackName} with args`, args);
             this.channel.postMessage({ type: 'callback', name: callbackName, args });
@@ -282,8 +330,8 @@ class SharedWorkerCompatBackend {
         }
     }
 
-    registerCallback(callbackName, callbackFunction) {
-        this.callbacks[callbackName] = callbackFunction;
+    registerCallback(callbackName, callbackFunction) {        
+        this.callbacks[callbackName] = callbackFunction;        
     }
 
     unregisterCallback(callbackName) {
@@ -297,7 +345,8 @@ class SharedWorkerCompatBackend {
 
 
 
-    close() {
+    async close() {
+        await this.ready();
         if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
         }
